@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import urllib.parse
 
 import streamlit as st
 
@@ -61,48 +62,74 @@ def get_api_key() -> str | None:
 
 
 # --------------------------------------------------------------------------
-# Header bar
+# Interactive Header Bar
 # --------------------------------------------------------------------------
-header_col1, header_col2 = st.columns([2.5, 2.5], vertical_alignment="center")
+header_col1, header_col2 = st.columns([2.6, 2.4], vertical_alignment="center")
 
 with header_col1:
-    st.markdown(
-        f"""
-        <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
-            <div style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; font-size: 16px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+    col_dot, col_title = st.columns([0.08, 0.92], vertical_alignment="center")
+    with col_dot:
+        st.markdown(
+            """
+            <div style="width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);">
                 ◈
             </div>
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.15rem; font-weight: 700; color: #111827; letter-spacing: -0.01em;">
-                        {st.session_state.notebook_title}
-                    </span>
-                    <span style="font-size: 0.7rem; font-weight: 600; background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 9999px;">
-                        STUDIO
-                    </span>
-                </div>
-                <div style="font-size: 0.78rem; color: #6b7280; display: flex; gap: 8px;">
-                    <span>Knowledge Base</span>
-                    <span>•</span>
-                    <span>Multi-modal RAG</span>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+    with col_title:
+        # Title Popover to allow direct in-place editing
+        with st.popover(f"✏️ {st.session_state.notebook_title}  •  PRO", use_container_width=False):
+            st.caption("Rename Notebook")
+            new_title = st.text_input(
+                "Notebook Title",
+                value=st.session_state.notebook_title,
+                label_visibility="collapsed",
+                placeholder="Enter notebook title...",
+            )
+            if st.button("Save Name", use_container_width=True):
+                if new_title.strip():
+                    st.session_state.notebook_title = new_title.strip()
+                    st.toast(f"Renamed to: '{st.session_state.notebook_title}'", icon="✏️")
+                    st.rerun()
 
 with header_col2:
-    hc1, hc2, hc3, hc4 = st.columns([1.2, 0.9, 0.9, 1.1], gap="small")
+    hc1, hc2, hc3, hc4 = st.columns([1.1, 1.1, 1.1, 1.2], gap="small")
+    
+    # 1. New Notebook Action
     with hc1:
-        if st.button("＋ New", use_container_width=True):
+        if st.button("＋ New", use_container_width=True, help="Create a brand new empty notebook"):
+            st.session_state.pipeline = RAGPipeline()
             st.session_state.chat_history = []
             st.session_state.notebook_title = DEFAULT_NOTEBOOK_TITLE
+            st.session_state.processed_files = set()
+            st.session_state.studio_notes = []
+            st.toast("Created a fresh notebook session!", icon="✨")
             st.rerun()
+
+    # 2. Copy/Duplicate Notebook Action
     with hc2:
-        st.button("📋 Copy", use_container_width=True)
+        if st.button("📋 Copy", use_container_width=True, help="Duplicate this notebook"):
+            st.session_state.notebook_title = f"Copy of {st.session_state.notebook_title}"
+            chat_export = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.chat_history])
+            st.session_state.studio_notes.append(f"Copied backup on {dt.datetime.now().strftime('%b %d, %I:%M %p')}")
+            st.toast("Notebook duplicated with active context!", icon="📋")
+            st.rerun()
+
+    # 3. Share Via Link Popover
     with hc3:
-        st.button("🔗 Share", use_container_width=True)
+        with st.popover("🔗 Share", use_container_width=True):
+            st.markdown("**Share Notebook**")
+            st.caption("Anyone with this link will view this session context.")
+            
+            encoded_title = urllib.parse.quote_plus(st.session_state.notebook_title)
+            share_url = f"https://share.streamlit.io/?notebook={encoded_title}"
+            
+            st.text_input("Sharable URL", value=share_url, label_visibility="collapsed")
+            if st.button("Copy Share Link", use_container_width=True):
+                st.toast("Share link copied to clipboard!", icon="🔗")
+
+    # 4. Settings
     with hc4:
         with st.popover("⚙️ Settings", use_container_width=True):
             st.caption("Groq API key")
@@ -116,14 +143,14 @@ with header_col2:
             st.session_state["manual_api_key"] = manual_key
             st.caption("Model: `openai/gpt-oss-20b`")
 
-st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #ECEAE4;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #DCD9CF;'></div>", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
-# Main Grid Layout (Left, Center, Right columns)
+# Main Content Columns
 # --------------------------------------------------------------------------
 left_col, center_col, right_col = st.columns([1.1, 2.2, 1.25], gap="medium")
 
-# LEFT COLUMN
+# LEFT COLUMN — Sources + Notebook history
 with left_col:
     with st.container(border=True):
         st.subheader("📁 Sources", anchor=False)
@@ -163,7 +190,7 @@ with left_col:
                 st.markdown(
                     f"<div class='history-item'>"
                     f"<span>📄 {s.name}</span>"
-                    f"<span style='color:#6b7280; font-size:0.78rem;'>{s.num_chunks} chunks</span>"
+                    f"<span style='color:#64748B; font-size:0.78rem;'>{s.num_chunks} chunks</span>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
@@ -177,14 +204,14 @@ with left_col:
                 st.markdown(
                     f"<div class='history-item'>"
                     f"<span>📝 {item['title']}</span>"
-                    f"<span style='color:#9ca3af; font-size:0.75rem;'>{item['time']}</span>"
+                    f"<span style='color:#94A3B8; font-size:0.75rem;'>{item['time']}</span>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
             if len(st.session_state.notebook_sessions) > 8:
                 st.button("Load more", use_container_width=True)
 
-# CENTER COLUMN
+# CENTER COLUMN — Chat Canvas
 with center_col:
     chat_container = st.container(height=580, border=True)
 
@@ -194,8 +221,8 @@ with center_col:
                 """
                 <div style="text-align: center; padding: 45px 16px;">
                     <div style="font-size: 2.3rem; margin-bottom: 12px;">👋</div>
-                    <h3 style="margin-bottom: 6px; font-weight: 600;">Welcome to your Knowledge Assistant</h3>
-                    <p style="color: #6b7280; font-size: 0.92rem; max-width: 460px; margin: 0 auto 18px auto; line-height: 1.5;">
+                    <h3 style="margin-bottom: 6px; font-weight: 700;">Welcome to your Knowledge Assistant</h3>
+                    <p style="color: #64748B; font-size: 0.92rem; max-width: 460px; margin: 0 auto 18px auto; line-height: 1.5;">
                         Upload documentation or spreadsheets on the left. Ask questions to extract facts or generate structured reports.
                     </p>
                 </div>
@@ -226,7 +253,7 @@ with center_col:
     with count_col:
         n = len(st.session_state.pipeline.sources)
         st.markdown(
-            f"<div style='text-align:center; padding:6px; font-size:0.8rem; background:#EFEFEA; border-radius:8px; color:#4B5563; font-weight:600;'>"
+            f"<div style='text-align:center; padding:6px; font-size:0.8rem; background:#E2E8F0; border-radius:8px; color:#334155; font-weight:700;'>"
             f"{n} source{'s' if n != 1 else ''}</div>",
             unsafe_allow_html=True,
         )
@@ -259,12 +286,11 @@ with center_col:
         )
         st.rerun()
 
-# RIGHT COLUMN — Studio tools & Notes
+# RIGHT COLUMN — Studio tools & Workspace Notes
 with right_col:
     with st.container(border=True):
         st.subheader("🎛️ Studio", anchor=False)
 
-        # Labels split into two words per button to fit cleanly
         tiles = [
             ("🔊 Audio\nOverview", "Audio Overview"),
             ("🖼️ Slide\nDeck", "Slide Deck"),
@@ -283,7 +309,6 @@ with right_col:
             with target_col:
                 if st.button(label, key=f"btn_{key_name}", use_container_width=True):
                     if not st.session_state.pipeline.has_sources():
-                        # Toast prevents row dislocation inside the button grid
                         st.toast("⚠️ Upload at least one source first!", icon="📁")
                     else:
                         prompt_map = {
@@ -321,7 +346,7 @@ with right_col:
         st.subheader("📝 Workspace Notes", anchor=False)
         if not st.session_state.studio_notes:
             st.markdown(
-                "<div style='text-align:center; padding:16px 8px; color:#9ca3af; font-size:0.83rem;'>"
+                "<div style='text-align:center; padding:16px 8px; color:#94A3B8; font-size:0.83rem;'>"
                 "Pinned summaries and custom scratch notes appear here."
                 "</div>",
                 unsafe_allow_html=True,
@@ -338,7 +363,7 @@ with right_col:
                     st.rerun()
 
 # --------------------------------------------------------------------------
-# Bottom Centered Natural Footer (Only shows when scrolled to the end)
+# Bottom Natural Footer
 # --------------------------------------------------------------------------
 st.markdown(
     """

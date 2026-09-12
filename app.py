@@ -26,7 +26,7 @@ from modules.rag_pipeline import RAGPipeline
 from modules.ui_styles import CUSTOM_CSS
 
 st.set_page_config(page_title=f"{APP_NAME}", page_icon="🔵", layout="wide")
-
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # Base styles + targeted layout fixes
 ENHANCED_CSS = f"""
 {CUSTOM_CSS}

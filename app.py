@@ -3,12 +3,7 @@ Knowledge Assistant - a NotebookLM-inspired RAG app.
 
 Upload a PDF, Word, Excel, CSV, TXT, or image file and ask questions
 about it. Answers are generated strictly from the uploaded content using
-Retrieval-Augmented Generation:
-
-    sentence-transformers (embeddings) -> FAISS (vector search)
-    -> Groq / openai-gpt-oss-20b (answer generation)
-
-Run locally:  streamlit run app.py
+Retrieval-Augmented Generation.
 """
 
 from __future__ import annotations
@@ -40,10 +35,12 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 def init_state():
     defaults = {
         "pipeline": RAGPipeline(),
-        "chat_history": [],  # list of {"role": ..., "content": ...}
+        "chat_history": [],
         "notebook_title": DEFAULT_NOTEBOOK_TITLE,
-        "notebook_sessions": [],  # simple in-memory "history" of notebooks this run
+        "notebook_sessions": [],
         "processed_files": set(),
+        "active_studio_tool": None,
+        "studio_notes": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -66,24 +63,28 @@ def get_api_key() -> str | None:
 # --------------------------------------------------------------------------
 # Header bar
 # --------------------------------------------------------------------------
-header_col1, header_col2 = st.columns([3, 4])
+header_col1, header_col2 = st.columns([1.6, 2.4], vertical_alignment="center")
 with header_col1:
     st.markdown(
         f"""
-        <div class="notebook-header" style="margin-bottom:0;">
-            <div class="brand">
-                <span class="logo-dot"></span>
-                {st.session_state.notebook_title}
-                <span class="pro-badge">PRO</span>
+        <div class="notebook-header" style="margin: 0; padding: 4px 0;">
+            <div class="brand" style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                <span class="logo-dot" style="width: 10px; height: 10px; background: #2563eb; border-radius: 50%; display: inline-block;"></span>
+                <span>{st.session_state.notebook_title}</span>
+                <span class="pro-badge" style="font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px;">PRO</span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
 with header_col2:
     hc1, hc2, hc3, hc4, hc5 = st.columns(5)
     with hc1:
-        st.button("＋ Create notebook", use_container_width=True)
+        if st.button("＋ Create", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.notebook_title = DEFAULT_NOTEBOOK_TITLE
+            st.rerun()
     with hc2:
         st.button("Copy", use_container_width=True)
     with hc3:
@@ -101,101 +102,105 @@ with header_col2:
                 label_visibility="collapsed",
             )
             st.session_state["manual_api_key"] = manual_key
-            st.caption(f"Model: `openai/gpt-oss-20b` via Groq")
+            st.caption("Model: `openai/gpt-oss-20b` via Groq")
 
-st.write("")
-
-left_col, center_col, right_col = st.columns([1.1, 2.2, 1.1], gap="medium")
+# --------------------------------------------------------------------------
+# Layout: Left, Center, Right Columns
+# --------------------------------------------------------------------------
+left_col, center_col, right_col = st.columns([1.1, 2.2, 1.2], gap="medium")
 
 # --------------------------------------------------------------------------
 # LEFT COLUMN — Sources + Notebook history
 # --------------------------------------------------------------------------
 with left_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("<h4>📁 Sources</h4>", unsafe_allow_html=True)
-    st.caption(f"Supported: {SUPPORTED_EXTENSIONS_LABEL}")
+    with st.container(border=True):
+        st.subheader("📁 Sources", anchor=False)
+        st.caption(f"Supported: {SUPPORTED_EXTENSIONS_LABEL}")
 
-    uploaded_files = st.file_uploader(
-        "＋ Add sources",
-        type=SUPPORTED_EXTENSIONS,
-        accept_multiple_files=True,
-        label_visibility="visible",
-    )
-
-    if uploaded_files:
-        for uf in uploaded_files:
-            file_key = f"{uf.name}-{uf.size}"
-            if file_key in st.session_state.processed_files:
-                continue
-            with st.spinner(f"Indexing '{uf.name}'..."):
-                try:
-                    file_bytes = uf.read()
-                    source = st.session_state.pipeline.add_document(uf.name, file_bytes)
-                    st.session_state.processed_files.add(file_key)
-                    st.session_state.notebook_sessions.insert(
-                        0,
-                        {
-                            "title": uf.name,
-                            "time": dt.datetime.now().strftime("%I:%M %p"),
-                        },
-                    )
-                    st.success(f"Indexed '{uf.name}' ({source.num_chunks} chunks)")
-                except Exception as e:
-                    st.error(f"Could not process '{uf.name}': {e}")
-
-    if st.session_state.pipeline.sources:
-        st.markdown("<hr style='margin:0.6rem 0;border-color:#ECEAE4;'>", unsafe_allow_html=True)
-        for s in st.session_state.pipeline.sources:
-            st.markdown(
-                f"<div class='history-item'>📄 {s.name}"
-                f"<span class='history-time'>{s.num_chunks} chunks</span></div>",
-                unsafe_allow_html=True,
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ---- Notebook history card ----
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("<h4>🕓 Notebook History</h4>", unsafe_allow_html=True)
-
-    if not st.session_state.notebook_sessions:
-        st.markdown(
-            "<span class='card-subtle'>Uploaded sources for this session will appear here.</span>",
-            unsafe_allow_html=True,
+        uploaded_files = st.file_uploader(
+            "Upload files",
+            type=SUPPORTED_EXTENSIONS,
+            accept_multiple_files=True,
+            label_visibility="collapsed",
         )
-    else:
-        for item in st.session_state.notebook_sessions[:8]:
-            st.markdown(
-                f"<div class='history-item'>📝 {item['title']}"
-                f"<span class='history-time'>{item['time']}</span></div>",
-                unsafe_allow_html=True,
-            )
-        if len(st.session_state.notebook_sessions) > 8:
-            st.button("Load more", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+
+        if uploaded_files:
+            for uf in uploaded_files:
+                file_key = f"{uf.name}-{uf.size}"
+                if file_key in st.session_state.processed_files:
+                    continue
+                with st.spinner(f"Indexing '{uf.name}'..."):
+                    try:
+                        file_bytes = uf.read()
+                        source = st.session_state.pipeline.add_document(uf.name, file_bytes)
+                        st.session_state.processed_files.add(file_key)
+                        st.session_state.notebook_sessions.insert(
+                            0,
+                            {
+                                "title": uf.name,
+                                "time": dt.datetime.now().strftime("%I:%M %p"),
+                            },
+                        )
+                        st.success(f"Indexed '{uf.name}' ({source.num_chunks} chunks)")
+                    except Exception as e:
+                        st.error(f"Could not process '{uf.name}': {e}")
+
+        if st.session_state.pipeline.sources:
+            st.divider()
+            for s in st.session_state.pipeline.sources:
+                st.markdown(
+                    f"<div class='history-item' style='display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.9rem;'>"
+                    f"<span>📄 {s.name}</span>"
+                    f"<span style='color:gray;'>{s.num_chunks} chunks</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
+    with st.container(border=True):
+        st.subheader("🕓 History", anchor=False)
+        if not st.session_state.notebook_sessions:
+            st.caption("Uploaded sources for this session will appear here.")
+        else:
+            for item in st.session_state.notebook_sessions[:8]:
+                st.markdown(
+                    f"<div class='history-item' style='display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;'>"
+                    f"<span>📝 {item['title']}</span>"
+                    f"<span style='color:gray;'>{item['time']}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            if len(st.session_state.notebook_sessions) > 8:
+                st.button("Load more", use_container_width=True)
 
 # --------------------------------------------------------------------------
 # CENTER COLUMN — Chat / synthesis canvas
 # --------------------------------------------------------------------------
 with center_col:
-    chat_container = st.container(height=560, border=True)
+    chat_container = st.container(height=580, border=True)
 
     with chat_container:
         if not st.session_state.chat_history:
             st.markdown(
                 """
-                <div class="welcome-wrap">
-                    <div class="emoji">👋</div>
-                    <h2>Let's start your notebook...</h2>
-                    <p>Add a source on the left, then ask anything about it — the answers
-                    come straight from your document, whatever field it's from.</p>
-                    <div class="chip-row">
-                        <span class="chip">Learn about a new topic</span>
-                        <span class="chip">Create something new</span>
-                    </div>
+                <div style="text-align: center; padding: 40px 10px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">👋</div>
+                    <h3 style="margin-bottom: 8px;">Let's start your notebook...</h3>
+                    <p style="color: #6b7280; font-size: 0.95rem; max-width: 480px; margin: 0 auto 16px auto;">
+                        Add a source on the left, then ask anything about it — answers come straight from your document.
+                    </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+            col_hint1, col_hint2 = st.columns(2)
+            with col_hint1:
+                if st.button("💡 Learn about key concepts", use_container_width=True):
+                    st.session_state.chat_history.append({"role": "user", "content": "Summarize the key concepts of the document."})
+                    st.rerun()
+            with col_hint2:
+                if st.button("📝 Create an executive summary", use_container_width=True):
+                    st.session_state.chat_history.append({"role": "user", "content": "Provide a high-level executive summary."})
+                    st.rerun()
         else:
             for msg in st.session_state.chat_history:
                 with st.chat_message(msg["role"]):
@@ -205,14 +210,14 @@ with center_col:
                             for s in msg["sources"]:
                                 st.caption(f"• {s}")
 
-    st.write("")
-    input_col, count_col = st.columns([5, 1])
+    input_col, count_col = st.columns([5, 1], vertical_alignment="center")
     with input_col:
-        question = st.chat_input("Ask a question or create something")
+        question = st.chat_input("Ask a question or request a summary...")
     with count_col:
         n = len(st.session_state.pipeline.sources)
         st.markdown(
-            f"<div class='source-tag' style='margin-top:0.6rem;'>{n} source{'s' if n != 1 else ''}</div>",
+            f"<div style='text-align:center; padding:6px; font-size:0.8rem; background:#f3f4f6; border-radius:6px; color:#4b5563;'>"
+            f"{n} source{'s' if n != 1 else ''}</div>",
             unsafe_allow_html=True,
         )
 
@@ -226,10 +231,7 @@ with center_col:
 
         api_key = get_api_key()
         if not api_key:
-            answer = (
-                "No Groq API key found. Add one in **⚙️ Settings** (top right) "
-                "or set `GROQ_API_KEY` in Streamlit secrets."
-            )
+            answer = "No Groq API key found. Add one in **⚙️ Settings** (top right) or set `GROQ_API_KEY`."
             st.session_state.chat_history.append({"role": "assistant", "content": answer})
             st.rerun()
 
@@ -248,39 +250,83 @@ with center_col:
         st.rerun()
 
 # --------------------------------------------------------------------------
-# RIGHT COLUMN — Studio tools
+# RIGHT COLUMN — Interactive Studio tools
 # --------------------------------------------------------------------------
 with right_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("<h4>🎛️ Studio</h4>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.subheader("🎛️ Studio", anchor=False)
 
-    tiles = [
-        ("🔊", "Audio Overview"),
-        ("🖼️", "Slide Deck"),
-        ("🎬", "Video Overview"),
-        ("🧠", "Mind Map"),
-        ("📊", "Reports"),
-        ("🗂️", "Flashcards"),
-        ("❓", "Quiz"),
-        ("📈", "Infographic"),
-        ("📋", "Data Table"),
-    ]
-    tile_cols = st.columns(2)
-    for i, (icon, label) in enumerate(tiles):
-        with tile_cols[i % 2]:
+        tiles = [
+            ("🔊 Audio Overview", "Audio Overview"),
+            ("🖼️ Slide Deck", "Slide Deck"),
+            ("🎬 Video Script", "Video Overview"),
+            ("🧠 Mind Map", "Mind Map"),
+            ("📊 Reports", "Reports"),
+            ("🗂️ Flashcards", "Flashcards"),
+            ("❓ Quiz", "Quiz"),
+            ("📈 Infographic", "Infographic"),
+            ("📋 Data Table", "Data Table"),
+        ]
+
+        t_col1, t_col2 = st.columns(2)
+        for i, (label, key_name) in enumerate(tiles):
+            target_col = t_col1 if i % 2 == 0 else t_col2
+            with target_col:
+                if st.button(label, key=f"studio_btn_{key_name}", use_container_width=True):
+                    if not st.session_state.pipeline.has_sources():
+                        st.warning("Upload a source first.")
+                    else:
+                        st.session_state.active_studio_tool = key_name
+                        prompt_map = {
+                            "Audio Overview": "Create an engaging two-person conversational podcast script summarizing the main takeaways from this document.",
+                            "Slide Deck": "Generate a slide-by-slide outline (Title, Bullet Points, Speaker Notes) for a presentation based on this document.",
+                            "Video Overview": "Draft a short 2-minute video script explaining the core insights of this document.",
+                            "Mind Map": "Structure a hierarchical outline showing main themes and subtopics suitable for generating a mind map.",
+                            "Reports": "Draft an executive briefing report detailing background, findings, and recommendations from this document.",
+                            "Flashcards": "Create 5 study flashcards with 'Front: [Question]' and 'Back: [Answer]' based on this document.",
+                            "Quiz": "Generate a 5-question multiple choice quiz with answer keys based on this material.",
+                            "Infographic": "Outline the narrative structure and numerical data points needed to build an infographic about this topic.",
+                            "Data Table": "Extract structured data, comparisons, and tabular facts into Markdown tables.",
+                        }
+                        user_request = prompt_map.get(key_name, f"Generate {key_name} content.")
+                        st.session_state.chat_history.append({"role": "user", "content": user_request})
+                        
+                        api_key = get_api_key()
+                        if api_key:
+                            with st.spinner(f"Generating {key_name}..."):
+                                results = st.session_state.pipeline.retrieve(user_request, top_k=TOP_K)
+                                context = st.session_state.pipeline.build_context(results)
+                                try:
+                                    res_text = generate_answer(user_request, context, api_key)
+                                    used_sources = sorted({c.source for c, _ in results})
+                                    st.session_state.chat_history.append(
+                                        {"role": "assistant", "content": res_text, "sources": used_sources}
+                                    )
+                                except Exception as err:
+                                    st.session_state.chat_history.append(
+                                        {"role": "assistant", "content": f"Studio error: {err}"}
+                                    )
+                        st.rerun()
+
+    with st.container(border=True):
+        st.subheader("📝 Workspace Notes", anchor=False)
+        if not st.session_state.studio_notes:
             st.markdown(
-                f"<div class='studio-tile'>{icon} &nbsp; {label} &nbsp; ›</div>",
+                "<div style='text-align:center; padding:18px 8px; color:#9ca3af; font-size:0.85rem;'>"
+                "✏️<br>Generated outputs and manual notes will persist here."
+                "</div>",
                 unsafe_allow_html=True,
             )
-    st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            for idx, note in enumerate(st.session_state.studio_notes):
+                st.text_area(f"Note {idx+1}", note, height=80, key=f"note_area_{idx}")
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown(
-        "<div class='studio-placeholder'>✏️<br>Studio output will be saved here</div>",
-        unsafe_allow_html=True,
-    )
-    st.button("＋ Add note", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+        with st.popover("＋ Add note", use_container_width=True):
+            new_note_val = st.text_area("Note content", placeholder="Type or paste output notes here...")
+            if st.button("Save Note", use_container_width=True):
+                if new_note_val.strip():
+                    st.session_state.studio_notes.append(new_note_val.strip())
+                    st.rerun()
 
 st.caption(
     "Knowledge Assistant · RAG powered by sentence-transformers + FAISS + "

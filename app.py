@@ -271,6 +271,7 @@ with center_col:
 # --------------------------------------------------------------------------
 # RIGHT COLUMN — Interactive Studio Tools & Notes
 # --------------------------------------------------------------------------
+# RIGHT COLUMN — Interactive Studio Tools & Notes
 with right_col:
     with st.container(border=True):
         st.subheader("🎛️ Studio", anchor=False)
@@ -287,13 +288,16 @@ with right_col:
             ("📋\nData Table", "Data Table"),
         ]
 
+        # Use an outer wrapper so CSS can directly target these buttons without nth-child guessing
+        st.markdown('<div class="studio-card">', unsafe_allow_html=True)
         t_col1, t_col2 = st.columns(2)
         for i, (label, key_name) in enumerate(tiles):
-            target_col = t_col1 if i % 2 == 0 else t_col2
+            target_col = t_col1 if (i % 2 == 0) else t_col2
             with target_col:
                 if st.button(label, key=f"btn_{key_name}", use_container_width=True):
                     if not st.session_state.pipeline.has_sources():
-                        st.warning("Upload a source first.")
+                        # Use toast instead of st.warning so it does NOT push column elements out of grid alignment
+                        st.toast("⚠️ Please upload at least one source first!", icon="📁")
                     else:
                         prompt_map = {
                             "Audio Overview": "Create an engaging two-person conversational podcast script summarizing the main takeaways from this document.",
@@ -325,26 +329,7 @@ with right_col:
                                         {"role": "assistant", "content": f"Error: {err}"}
                                     )
                         st.rerun()
-
-    with st.container(border=True):
-        st.subheader("📝 Workspace Notes", anchor=False)
-        if not st.session_state.studio_notes:
-            st.markdown(
-                "<div style='text-align:center; padding:16px 8px; color:#9ca3af; font-size:0.83rem;'>"
-                "Pinned summaries and custom scratch notes appear here."
-                "</div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            for idx, note in enumerate(st.session_state.studio_notes):
-                st.text_area(f"Note {idx+1}", note, height=80, key=f"note_area_{idx}")
-
-        with st.popover("＋ Add note", use_container_width=True):
-            new_note_val = st.text_area("Note content", placeholder="Paste or type notes...")
-            if st.button("Save Note", use_container_width=True):
-                if new_note_val.strip():
-                    st.session_state.studio_notes.append(new_note_val.strip())
-                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
 # Bottom Centered Fixed Footer

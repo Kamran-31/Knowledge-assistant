@@ -12,7 +12,7 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-    background-color: #F7F6F3;
+    background-color: #EEECE7;
 }
 
 /* Hide default Streamlit chrome */

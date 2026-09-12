@@ -64,29 +64,26 @@ def get_api_key() -> str | None:
 # --------------------------------------------------------------------------
 # Header bar
 # --------------------------------------------------------------------------
-st.markdown('<div class="header-wrapper">', unsafe_allow_html=True)
-header_col1, header_col2 = st.columns([1.8, 2.2], vertical_alignment="center")
+header_col1, header_col2 = st.columns([2.2, 2.2], vertical_alignment="center")
 
 with header_col1:
-    st.markdown('<div class="header-left-col">', unsafe_allow_html=True)
-    col_dot, col_title = st.columns([0.05, 0.95], vertical_alignment="center")
+    # [1, 6] gives the icon column enough width so it never overflows into the title
+    col_dot, col_title = st.columns([1, 6], gap="small", vertical_alignment="center")
     
     with col_dot:
-        # Height and border-radius calibrated to 44px to match the popover button
         st.markdown(
             """
             <div style="
-                width: 44px; 
-                height: 44px; 
-                border-radius: 12px; 
+                width: 40px; 
+                height: 40px; 
+                border-radius: 10px; 
                 background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); 
                 display: flex; 
                 align-items: center; 
                 justify-content: center; 
                 color: white; 
-                font-size: 19px; 
-                box-shadow: 0 2px 6px rgba(37,99,235,0.22);
-                box-sizing: border-box;">
+                font-size: 18px; 
+                box-shadow: 0 2px 6px rgba(37,99,235,0.22);">
                 ◈
             </div>
             """,
@@ -107,10 +104,8 @@ with header_col1:
                     st.session_state.notebook_title = new_title.strip()
                     st.toast(f"Renamed to: '{st.session_state.notebook_title}'", icon="✏️")
                     st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with header_col2:
-    # 4 equal-width columns
     hc1, hc2, hc3, hc4 = st.columns(4, gap="small", vertical_alignment="center")
     
     with hc1:
@@ -153,9 +148,7 @@ with header_col2:
             st.session_state["manual_api_key"] = manual_key
             st.caption("Model: `openai/gpt-oss-20b`")
 
-st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("<div style='margin-top: 4px; margin-bottom: 12px; border-bottom: 1px solid #DCD9CF;'></div>", unsafe_allow_html=True)
-
 
 # --------------------------------------------------------------------------
 # Main Content Columns

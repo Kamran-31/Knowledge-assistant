@@ -1,6 +1,5 @@
 """
 UI Styles for Knowledge Assistant
-Contains custom CSS for cards, header, studio buttons, and the fixed footer.
 """
 
 CUSTOM_CSS = """
@@ -24,7 +23,7 @@ header[data-testid="stHeader"] {
     visibility: hidden;
 }
 
-/* Main container spacing to prevent bottom content from hiding behind sticky footer */
+/* Container page padding */
 .block-container {
     padding-top: 1.8rem !important;
     padding-bottom: 4.5rem !important;
@@ -39,7 +38,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
 }
 
-/* Header & action pill buttons */
+/* Top bar standard buttons */
 div.stButton > button {
     border-radius: 999px !important;
     border: 1px solid #E4E1D8 !important;
@@ -56,11 +55,12 @@ div.stButton > button:hover {
     background: #F5F8FF !important;
 }
 
-/* Studio Panel Buttons (Third column grid) */
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button {
-    min-height: 68px !important;
+/* ---------- STUDIO BUTTON FIXES ---------- */
+/* Container button box */
+.studio-card div[data-testid="stButton"] button {
+    min-height: 72px !important;
     height: auto !important;
-    padding: 10px 8px !important;
+    padding: 8px 4px !important;
     border-radius: 12px !important;
     border: 1px solid #E5E7EB !important;
     background-color: #FAFAFA !important;
@@ -68,32 +68,37 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) di
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
     transition: all 0.15s ease-in-out !important;
 }
 
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button:hover {
+.studio-card div[data-testid="stButton"] button:hover {
     border-color: #2563EB !important;
     background-color: #EFF6FF !important;
-    color: #1D4ED8 !important;
     transform: translateY(-1px);
     box-shadow: 0 3px 6px rgba(37,99,235,0.08) !important;
 }
 
-/* Studio Button Inner Text: Large Emoji, no truncation, word wrap */
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) div[data-testid="stButton"] button p {
-    font-size: 0.84rem !important;
-    font-weight: 500 !important;
-    line-height: 1.35 !important;
+/* Remove Streamlit's default truncation on all child text nodes */
+.studio-card div[data-testid="stButton"] button * {
     white-space: pre-line !important;
-    text-overflow: clip !important;
+    text-overflow: unset !important;
     overflow: visible !important;
-    word-break: break-word !important;
+    word-break: normal !important;
     text-align: center !important;
+    line-height: 1.25 !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    color: #1F2937 !important;
     margin: 0 !important;
 }
 
-/* Chat bubble styling */
+/* First line (Emoji) enlargement */
+.studio-card div[data-testid="stButton"] button *:first-line {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+}
+
+/* ---------- Other Components ---------- */
 [data-testid="stChatMessage"] {
     background: #FFFFFF;
     border-radius: 14px;
@@ -102,7 +107,6 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) di
     margin-bottom: 0.6rem;
 }
 
-/* History item row */
 .history-item {
     display: flex;
     align-items: center;
@@ -117,7 +121,6 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(3) di
     background: #F3F2EC;
 }
 
-/* Fixed bottom-centered footer */
 .app-footer {
     position: fixed;
     bottom: 0;

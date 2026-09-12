@@ -62,35 +62,38 @@ def get_api_key() -> str | None:
 
 
 # --------------------------------------------------------------------------
-# Interactive Header Bar
+# Header bar
 # --------------------------------------------------------------------------
-st.markdown('<div class="header-row">', unsafe_allow_html=True)
-header_col1, header_col2 = st.columns([2.2, 2.2], vertical_alignment="center")
+st.markdown('<div class="header-wrapper">', unsafe_allow_html=True)
+header_col1, header_col2 = st.columns([1.8, 2.2], vertical_alignment="center")
 
 with header_col1:
-    col_dot, col_title = st.columns([0.12, 0.88], vertical_alignment="center")
+    st.markdown('<div class="header-left-col">', unsafe_allow_html=True)
+    col_dot, col_title = st.columns([0.05, 0.95], vertical_alignment="center")
+    
     with col_dot:
-        # Exact 40px box to align flush with the notebook title button
+        # Height and border-radius calibrated to 44px to match the popover button
         st.markdown(
             """
             <div style="
-                width: 40px; 
-                height: 40px; 
-                border-radius: 10px; 
+                width: 44px; 
+                height: 44px; 
+                border-radius: 12px; 
                 background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); 
                 display: flex; 
                 align-items: center; 
                 justify-content: center; 
                 color: white; 
-                font-size: 18px; 
-                box-shadow: 0 2px 5px rgba(37,99,235,0.25);">
+                font-size: 19px; 
+                box-shadow: 0 2px 6px rgba(37,99,235,0.22);
+                box-sizing: border-box;">
                 ◈
             </div>
             """,
             unsafe_allow_html=True,
         )
+        
     with col_title:
-        # Pencil removed, height locked to 40px via .header-row CSS
         with st.popover(f"{st.session_state.notebook_title} • PRO", use_container_width=False):
             st.caption("Rename Notebook")
             new_title = st.text_input(
@@ -104,13 +107,14 @@ with header_col1:
                     st.session_state.notebook_title = new_title.strip()
                     st.toast(f"Renamed to: '{st.session_state.notebook_title}'", icon="✏️")
                     st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with header_col2:
-    # 4 equal-sized columns so all four buttons share identical width & height
+    # 4 equal-width columns
     hc1, hc2, hc3, hc4 = st.columns(4, gap="small", vertical_alignment="center")
     
     with hc1:
-        if st.button("＋ New", use_container_width=True, help="Create a clean notebook"):
+        if st.button("＋ New", use_container_width=True):
             st.session_state.pipeline = RAGPipeline()
             st.session_state.chat_history = []
             st.session_state.notebook_title = DEFAULT_NOTEBOOK_TITLE
@@ -120,7 +124,7 @@ with header_col2:
             st.rerun()
 
     with hc2:
-        if st.button("📋 Copy", use_container_width=True, help="Duplicate this notebook"):
+        if st.button("📋 Copy", use_container_width=True):
             st.session_state.notebook_title = f"Copy of {st.session_state.notebook_title}"
             st.session_state.studio_notes.append(f"Copied backup on {dt.datetime.now().strftime('%b %d, %I:%M %p')}")
             st.toast("Notebook duplicated!", icon="📋")
@@ -150,7 +154,9 @@ with header_col2:
             st.caption("Model: `openai/gpt-oss-20b`")
 
 st.markdown("</div>", unsafe_allow_html=True)
-st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #DCD9CF;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 4px; margin-bottom: 12px; border-bottom: 1px solid #DCD9CF;'></div>", unsafe_allow_html=True)
+
+
 # --------------------------------------------------------------------------
 # Main Content Columns
 # --------------------------------------------------------------------------

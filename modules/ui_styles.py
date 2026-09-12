@@ -79,6 +79,42 @@ header[data-testid="stHeader"] {
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
 }
 
+/* --- Unify Header Buttons & Popovers --- */
+.header-row div[data-testid="stButton"] button,
+.header-row div[data-testid="stPopover"] > button {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    border-radius: 10px !important;
+    padding: 0 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #D1D5DB !important;
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.15s ease-in-out !important;
+    margin: 0 !important;
+}
+
+.header-row div[data-testid="stButton"] button:hover,
+.header-row div[data-testid="stPopover"] > button:hover {
+    border-color: #2563EB !important;
+    color: #2563EB !important;
+    background-color: #F8FAFC !important;
+}
+
+/* Ensure inner text is vertically centered without extra margins */
+.header-row div[data-testid="stButton"] button p,
+.header-row div[data-testid="stPopover"] > button p {
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-size: 0.85rem !important;
+}
+
 /* ---------- Rounded Border Cards ---------- */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: #FFFFFF !important;

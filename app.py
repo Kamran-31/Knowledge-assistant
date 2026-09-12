@@ -3,12 +3,7 @@ Knowledge Assistant - a NotebookLM-inspired RAG app.
 
 Upload a PDF, Word, Excel, CSV, TXT, or image file and ask questions
 about it. Answers are generated strictly from the uploaded content using
-Retrieval-Augmented Generation:
-
-    sentence-transformers (embeddings) -> FAISS (vector search)
-    -> Groq / openai-gpt-oss-20b (answer generation)
-
-Run locally:  streamlit run app.py
+Retrieval-Augmented Generation.
 """
 
 from __future__ import annotations
@@ -124,13 +119,11 @@ with header_col2:
 st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #ECEAE4;'></div>", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
-# Main Columns
+# Main Grid Layout (Left, Center, Right columns)
 # --------------------------------------------------------------------------
-left_col, center_col, right_col = st.columns([1.1, 2.2, 1.2], gap="medium")
+left_col, center_col, right_col = st.columns([1.1, 2.2, 1.25], gap="medium")
 
-# --------------------------------------------------------------------------
-# LEFT COLUMN — Sources + Notebook history
-# --------------------------------------------------------------------------
+# LEFT COLUMN
 with left_col:
     with st.container(border=True):
         st.subheader("📁 Sources", anchor=False)
@@ -191,9 +184,7 @@ with left_col:
             if len(st.session_state.notebook_sessions) > 8:
                 st.button("Load more", use_container_width=True)
 
-# --------------------------------------------------------------------------
-# CENTER COLUMN — Chat Canvas
-# --------------------------------------------------------------------------
+# CENTER COLUMN
 with center_col:
     chat_container = st.container(height=580, border=True)
 
@@ -268,36 +259,32 @@ with center_col:
         )
         st.rerun()
 
-# --------------------------------------------------------------------------
-# RIGHT COLUMN — Interactive Studio Tools & Notes
-# --------------------------------------------------------------------------
-# RIGHT COLUMN — Interactive Studio Tools & Notes
+# RIGHT COLUMN — Studio tools & Notes
 with right_col:
     with st.container(border=True):
         st.subheader("🎛️ Studio", anchor=False)
 
+        # Labels split into two words per button to fit cleanly
         tiles = [
-            ("🔊\nAudio Overview", "Audio Overview"),
-            ("🖼️\nSlide Deck", "Slide Deck"),
-            ("🎬\nVideo Script", "Video Overview"),
-            ("🧠\nMind Map", "Mind Map"),
-            ("📊\nReport Doc", "Reports"),
-            ("🗂️\nFlashcards", "Flashcards"),
-            ("❓\nPractice Quiz", "Quiz"),
-            ("📈\nInfographic", "Infographic"),
-            ("📋\nData Table", "Data Table"),
+            ("🔊 Audio\nOverview", "Audio Overview"),
+            ("🖼️ Slide\nDeck", "Slide Deck"),
+            ("🎬 Video\nScript", "Video Overview"),
+            ("🧠 Mind\nMap", "Mind Map"),
+            ("📊 Report\nDoc", "Reports"),
+            ("🗂️ Flash\ncards", "Flashcards"),
+            ("❓ Practice\nQuiz", "Quiz"),
+            ("📈 Info\ngraphic", "Infographic"),
+            ("📋 Data\nTable", "Data Table"),
         ]
 
-        # Use an outer wrapper so CSS can directly target these buttons without nth-child guessing
-        st.markdown('<div class="studio-card">', unsafe_allow_html=True)
         t_col1, t_col2 = st.columns(2)
         for i, (label, key_name) in enumerate(tiles):
             target_col = t_col1 if (i % 2 == 0) else t_col2
             with target_col:
                 if st.button(label, key=f"btn_{key_name}", use_container_width=True):
                     if not st.session_state.pipeline.has_sources():
-                        # Use toast instead of st.warning so it does NOT push column elements out of grid alignment
-                        st.toast("⚠️ Please upload at least one source first!", icon="📁")
+                        # Toast prevents row dislocation inside the button grid
+                        st.toast("⚠️ Upload at least one source first!", icon="📁")
                     else:
                         prompt_map = {
                             "Audio Overview": "Create an engaging two-person conversational podcast script summarizing the main takeaways from this document.",
@@ -329,10 +316,29 @@ with right_col:
                                         {"role": "assistant", "content": f"Error: {err}"}
                                     )
                         st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.subheader("📝 Workspace Notes", anchor=False)
+        if not st.session_state.studio_notes:
+            st.markdown(
+                "<div style='text-align:center; padding:16px 8px; color:#9ca3af; font-size:0.83rem;'>"
+                "Pinned summaries and custom scratch notes appear here."
+                "</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            for idx, note in enumerate(st.session_state.studio_notes):
+                st.text_area(f"Note {idx+1}", note, height=80, key=f"note_area_{idx}")
+
+        with st.popover("＋ Add note", use_container_width=True):
+            new_note_val = st.text_area("Note content", placeholder="Paste or type notes...")
+            if st.button("Save Note", use_container_width=True):
+                if new_note_val.strip():
+                    st.session_state.studio_notes.append(new_note_val.strip())
+                    st.rerun()
 
 # --------------------------------------------------------------------------
-# Bottom Centered Fixed Footer
+# Bottom Centered Natural Footer (Only shows when scrolled to the end)
 # --------------------------------------------------------------------------
 st.markdown(
     """

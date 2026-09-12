@@ -1,6 +1,7 @@
 """
 UI Styles for Knowledge Assistant
-Features unified header widgets, matching action buttons, and responsive layout.
+Features unified 40px header widgets, untruncated colorful studio tiles,
+clean rounded card containers, and a natural scrollable bottom footer.
 """
 
 CUSTOM_CSS = """
@@ -15,6 +16,7 @@ html, body, [class*="css"] {
     background-color: #EEECE7;
 }
 
+/* Hide native Streamlit chrome */
 header[data-testid="stHeader"] {
     display: none !important;
 }
@@ -29,71 +31,50 @@ header[data-testid="stHeader"] {
     max-width: 100% !important;
 }
 
-/* ---------- HEADER ROW & ALIGNMENT ---------- */
-.header-wrapper {
-    margin-bottom: 12px;
-}
-
-/* Pull the blue logo and title together with zero dead space */
-.header-left-col div[data-testid="stHorizontalBlock"] {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    justify-content: flex-start !important;
-}
-
-.header-left-col div[data-testid="stColumn"]:first-child {
-    flex: 0 0 42px !important;
-    min-width: 42px !important;
-    max-width: 42px !important;
-}
-
-.header-left-col div[data-testid="stColumn"]:last-child {
-    flex: 0 1 auto !important;
-}
-
-/* ---------- MAKE ALL 4 RIGHT BUTTONS & TITLE THE EXACT SAME LEVEL & BOX SIZE ---------- */
-.header-wrapper div[data-testid="stButton"] > button,
-.header-wrapper div[data-testid="stPopover"] > button {
-    height: 44px !important;
-    min-height: 44px !important;
-    max-height: 44px !important;
-    border-radius: 12px !important;
-    border: 1px solid #ECEAE4 !important;
-    background: #FFFFFF !important;
+/* ---------- UNIFIED 40PX HEADER BUTTONS & POPOVERS ---------- */
+/* Applies to both standard buttons and popover trigger buttons in the header row */
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stButton"] > button,
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stPopover"] > button {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    border-radius: 10px !important;
+    border: 1px solid #D1D5DB !important;
+    background-color: #FFFFFF !important;
     color: #1F2937 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-    font-size: 0.88rem !important;
+    font-size: 0.85rem !important;
     font-weight: 500 !important;
-    padding: 0 14px !important;
+    padding: 0 12px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 100% !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
     margin: 0 !important;
+    width: 100% !important;
     transition: all 0.15s ease-in-out !important;
 }
 
-.header-wrapper div[data-testid="stButton"] > button:hover,
-.header-wrapper div[data-testid="stPopover"] > button:hover {
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stButton"] > button:hover,
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stPopover"] > button:hover {
     border-color: #2563EB !important;
     color: #2563EB !important;
     background-color: #F8FAFC !important;
-    box-shadow: 0 2px 6px rgba(37,99,235,0.08) !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08) !important;
 }
 
-.header-wrapper div[data-testid="stButton"] > button p,
-.header-wrapper div[data-testid="stPopover"] > button p {
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stButton"] > button p,
+div[data-testid="stHorizontalBlock"]:first-of-type div[data-testid="stPopover"] > button p {
     margin: 0 !important;
     line-height: 1 !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 6px !important;
 }
 
-/* Card wrappers */
+/* ---------- CARD CONTAINERS ---------- */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: #FFFFFF !important;
     border-radius: 18px !important;
@@ -101,56 +82,78 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* Studio action tiles */
+/* Section Headings */
+h3, h4, [data-testid="stHeading"] {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #0F172A !important;
+}
+
+/* ---------- STUDIO ACTION BUTTONS ---------- */
 div[data-testid="stColumn"] div[data-testid="stButton"] button {
-    min-height: 60px !important;
+    min-height: 62px !important;
     height: auto !important;
     padding: 6px 4px !important;
     border-radius: 12px !important;
     border: 1px solid #E5E7EB !important;
     background-color: #FAFAFA !important;
+    transition: all 0.15s ease-in-out !important;
 }
 
+/* Remove text truncation and allow multi-line labels */
+div[data-testid="stColumn"] div[data-testid="stButton"] button,
 div[data-testid="stColumn"] div[data-testid="stButton"] button *,
-div[data-testid="stColumn"] div[data-testid="stButton"] button p {
-    white-space: normal !important;
+div[data-testid="stColumn"] div[data-testid="stButton"] button p,
+div[data-testid="stColumn"] div[data-testid="stButton"] button span {
+    white-space: pre-line !important;
     text-overflow: clip !important;
     overflow: visible !important;
     word-break: break-word !important;
     text-align: center !important;
     font-size: 0.82rem !important;
     line-height: 1.25 !important;
+    color: #1F2937 !important;
 }
 
 div[data-testid="stColumn"] div[data-testid="stButton"] button:hover {
     border-color: #2563EB !important;
     background-color: #EFF6FF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(37, 99, 235, 0.08) !important;
 }
 
-/* Chat bubble styling */
+/* ---------- CHAT MESSAGES ---------- */
 [data-testid="stChatMessage"] {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #ECEAE4;
-    padding: 0.6rem 0.8rem;
-    margin-bottom: 0.6rem;
+    background: #FFFFFF !important;
+    border-radius: 14px !important;
+    border: 1px solid #ECEAE4 !important;
+    padding: 0.6rem 0.8rem !important;
+    margin-bottom: 0.6rem !important;
 }
 
+/* User Message Variation */
+[data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
+    background: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+}
+
+/* ---------- SESSION HISTORY ITEMS ---------- */
 .history-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.4rem 0.3rem;
+    padding: 0.45rem 0.4rem;
     border-radius: 8px;
     font-size: 0.84rem;
     color: #374151;
+    transition: background 0.12s ease;
 }
 
 .history-item:hover {
     background: #F1EFE8;
 }
 
-/* Bottom natural footer */
+/* ---------- NATURAL BOTTOM FOOTER ---------- */
 .app-footer {
     position: relative !important;
     display: block !important;

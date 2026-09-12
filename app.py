@@ -64,22 +64,34 @@ def get_api_key() -> str | None:
 # --------------------------------------------------------------------------
 # Interactive Header Bar
 # --------------------------------------------------------------------------
-header_col1, header_col2 = st.columns([2.6, 2.4], vertical_alignment="center")
+st.markdown('<div class="header-row">', unsafe_allow_html=True)
+header_col1, header_col2 = st.columns([2.2, 2.2], vertical_alignment="center")
 
 with header_col1:
-    col_dot, col_title = st.columns([0.08, 0.92], vertical_alignment="center")
+    col_dot, col_title = st.columns([0.12, 0.88], vertical_alignment="center")
     with col_dot:
+        # Exact 40px box to align flush with the notebook title button
         st.markdown(
             """
-            <div style="width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);">
+            <div style="
+                width: 40px; 
+                height: 40px; 
+                border-radius: 10px; 
+                background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                color: white; 
+                font-size: 18px; 
+                box-shadow: 0 2px 5px rgba(37,99,235,0.25);">
                 ◈
             </div>
             """,
             unsafe_allow_html=True,
         )
     with col_title:
-        # Title Popover to allow direct in-place editing
-        with st.popover(f"✏️ {st.session_state.notebook_title}  •  PRO", use_container_width=False):
+        # Pencil removed, height locked to 40px via .header-row CSS
+        with st.popover(f"{st.session_state.notebook_title} • PRO", use_container_width=False):
             st.caption("Rename Notebook")
             new_title = st.text_input(
                 "Notebook Title",
@@ -94,11 +106,11 @@ with header_col1:
                     st.rerun()
 
 with header_col2:
-    hc1, hc2, hc3, hc4 = st.columns([1.1, 1.1, 1.1, 1.2], gap="small")
+    # 4 equal-sized columns so all four buttons share identical width & height
+    hc1, hc2, hc3, hc4 = st.columns(4, gap="small", vertical_alignment="center")
     
-    # 1. New Notebook Action
     with hc1:
-        if st.button("＋ New", use_container_width=True, help="Create a brand new empty notebook"):
+        if st.button("＋ New", use_container_width=True, help="Create a clean notebook"):
             st.session_state.pipeline = RAGPipeline()
             st.session_state.chat_history = []
             st.session_state.notebook_title = DEFAULT_NOTEBOOK_TITLE
@@ -107,29 +119,23 @@ with header_col2:
             st.toast("Created a fresh notebook session!", icon="✨")
             st.rerun()
 
-    # 2. Copy/Duplicate Notebook Action
     with hc2:
         if st.button("📋 Copy", use_container_width=True, help="Duplicate this notebook"):
             st.session_state.notebook_title = f"Copy of {st.session_state.notebook_title}"
-            chat_export = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.chat_history])
             st.session_state.studio_notes.append(f"Copied backup on {dt.datetime.now().strftime('%b %d, %I:%M %p')}")
-            st.toast("Notebook duplicated with active context!", icon="📋")
+            st.toast("Notebook duplicated!", icon="📋")
             st.rerun()
 
-    # 3. Share Via Link Popover
     with hc3:
         with st.popover("🔗 Share", use_container_width=True):
             st.markdown("**Share Notebook**")
-            st.caption("Anyone with this link will view this session context.")
-            
+            st.caption("Copy this URL to share:")
             encoded_title = urllib.parse.quote_plus(st.session_state.notebook_title)
             share_url = f"https://share.streamlit.io/?notebook={encoded_title}"
-            
             st.text_input("Sharable URL", value=share_url, label_visibility="collapsed")
-            if st.button("Copy Share Link", use_container_width=True):
+            if st.button("Copy Link", use_container_width=True):
                 st.toast("Share link copied to clipboard!", icon="🔗")
 
-    # 4. Settings
     with hc4:
         with st.popover("⚙️ Settings", use_container_width=True):
             st.caption("Groq API key")
@@ -143,8 +149,8 @@ with header_col2:
             st.session_state["manual_api_key"] = manual_key
             st.caption("Model: `openai/gpt-oss-20b`")
 
+st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #DCD9CF;'></div>", unsafe_allow_html=True)
-
 # --------------------------------------------------------------------------
 # Main Content Columns
 # --------------------------------------------------------------------------

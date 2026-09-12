@@ -3,7 +3,12 @@ Knowledge Assistant - a NotebookLM-inspired RAG app.
 
 Upload a PDF, Word, Excel, CSV, TXT, or image file and ask questions
 about it. Answers are generated strictly from the uploaded content using
-Retrieval-Augmented Generation.
+Retrieval-Augmented Generation:
+
+    sentence-transformers (embeddings) -> FAISS (vector search)
+    -> Groq / openai-gpt-oss-20b (answer generation)
+
+Run locally:  streamlit run app.py
 """
 
 from __future__ import annotations
@@ -23,134 +28,14 @@ from config import (
 )
 from modules.llm import generate_answer
 from modules.rag_pipeline import RAGPipeline
+from modules.ui_styles import CUSTOM_CSS
 
 st.set_page_config(page_title=f"{APP_NAME}", page_icon="🔵", layout="wide")
-
-# --------------------------------------------------------------------------
-# All Custom CSS (Unified in one single <style> tag)
-# --------------------------------------------------------------------------
-ALL_CSS = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
-.stApp {
-    background-color: #F7F6F3;
-}
-
-#MainMenu, footer {
-    visibility: hidden;
-}
-
-/* Page padding to prevent the sticky footer from hiding content */
-.block-container {
-    padding-top: 4.5rem !important;
-    padding-bottom: 4.5rem !important;
-    max-width: 100% !important;
-}
-
-/* Container cards */
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: #FFFFFF;
-    border-radius: 16px !important;
-    border: 1px solid #ECEAE4 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
-}
-
-/* Header & action pill buttons */
-div.stButton > button {
-    border-radius: 999px !important;
-    border: 1px solid #E4E1D8 !important;
-    background: #FFFFFF;
-    color: #1F2937;
-    font-weight: 500;
-    padding: 0.45rem 1rem;
-    transition: all 0.15s ease-in-out;
-}
-
-div.stButton > button:hover {
-    border-color: #2563EB !important;
-    color: #2563EB !important;
-    background: #F5F8FF !important;
-}
-
-/* Studio Panel Buttons (Enlarged with text visible and wrapped) */
-.studio-grid div[data-testid="stButton"] button {
-    min-height: 54px !important;
-    height: auto !important;
-    padding: 8px 10px !important;
-    font-size: 0.82rem !important;
-    font-weight: 500 !important;
-    line-height: 1.25 !important;
-    white-space: normal !important;
-    word-break: normal !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    border-radius: 12px !important;
-    border: 1px solid #E5E7EB !important;
-    background-color: #F9FAFB !important;
-    transition: all 0.15s ease-in-out !important;
-}
-
-.studio-grid div[data-testid="stButton"] button:hover {
-    border-color: #2563EB !important;
-    background-color: #EFF6FF !important;
-    color: #1D4ED8 !important;
-    box-shadow: 0 2px 4px rgba(37,99,235,0.08) !important;
-}
-
-/* Chat bubble styling */
-[data-testid="stChatMessage"] {
-    background: #FFFFFF;
-    border-radius: 14px;
-    border: 1px solid #ECEAE4;
-    padding: 0.6rem 0.8rem;
-    margin-bottom: 0.6rem;
-}
-
-/* History item row */
-.history-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.4rem 0.3rem;
-    border-radius: 8px;
-    font-size: 0.84rem;
-    color: #374151;
-}
-.history-item:hover {
-    background: #F3F2EC;
-}
-
-/* Fixed bottom-centered footer */
-.app-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: rgba(247, 246, 243, 0.95);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-top: 1px solid #E5E7EB;
-    text-align: center;
-    padding: 8px 16px;
-    font-size: 0.76rem;
-    color: #6B7280;
-    z-index: 99999;
-    letter-spacing: 0.01em;
-}
-</style>
-"""
-st.markdown(ALL_CSS, unsafe_allow_html=True)
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------
-# Session State
+# Session state
 # --------------------------------------------------------------------------
 def init_state():
     defaults = {
@@ -181,7 +66,7 @@ def get_api_key() -> str | None:
 
 
 # --------------------------------------------------------------------------
-# Professional Header Bar
+# Header bar
 # --------------------------------------------------------------------------
 header_col1, header_col2 = st.columns([2.5, 2.5], vertical_alignment="center")
 
@@ -239,11 +124,13 @@ with header_col2:
 st.markdown("<div style='margin-top: 6px; margin-bottom: 12px; border-bottom: 1px solid #ECEAE4;'></div>", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
-# Main Content Columns
+# Main Columns
 # --------------------------------------------------------------------------
 left_col, center_col, right_col = st.columns([1.1, 2.2, 1.2], gap="medium")
 
-# LEFT COLUMN
+# --------------------------------------------------------------------------
+# LEFT COLUMN — Sources + Notebook history
+# --------------------------------------------------------------------------
 with left_col:
     with st.container(border=True):
         st.subheader("📁 Sources", anchor=False)
@@ -304,7 +191,9 @@ with left_col:
             if len(st.session_state.notebook_sessions) > 8:
                 st.button("Load more", use_container_width=True)
 
-# CENTER COLUMN
+# --------------------------------------------------------------------------
+# CENTER COLUMN — Chat Canvas
+# --------------------------------------------------------------------------
 with center_col:
     chat_container = st.container(height=580, border=True)
 
@@ -379,24 +268,25 @@ with center_col:
         )
         st.rerun()
 
-# RIGHT COLUMN
+# --------------------------------------------------------------------------
+# RIGHT COLUMN — Interactive Studio Tools & Notes
+# --------------------------------------------------------------------------
 with right_col:
     with st.container(border=True):
         st.subheader("🎛️ Studio", anchor=False)
 
         tiles = [
-            ("🔊 Audio Overview", "Audio Overview"),
-            ("🖼️ Slide Deck", "Slide Deck"),
-            ("🎬 Video Script", "Video Overview"),
-            ("🧠 Mind Map", "Mind Map"),
-            ("📊 Report Doc", "Reports"),
-            ("🗂️ Flashcards", "Flashcards"),
-            ("❓ Practice Quiz", "Quiz"),
-            ("📈 Infographic", "Infographic"),
-            ("📋 Data Table", "Data Table"),
+            ("🔊\nAudio Overview", "Audio Overview"),
+            ("🖼️\nSlide Deck", "Slide Deck"),
+            ("🎬\nVideo Script", "Video Overview"),
+            ("🧠\nMind Map", "Mind Map"),
+            ("📊\nReport Doc", "Reports"),
+            ("🗂️\nFlashcards", "Flashcards"),
+            ("❓\nPractice Quiz", "Quiz"),
+            ("📈\nInfographic", "Infographic"),
+            ("📋\nData Table", "Data Table"),
         ]
 
-        st.markdown('<div class="studio-grid">', unsafe_allow_html=True)
         t_col1, t_col2 = st.columns(2)
         for i, (label, key_name) in enumerate(tiles):
             target_col = t_col1 if i % 2 == 0 else t_col2
@@ -435,7 +325,6 @@ with right_col:
                                         {"role": "assistant", "content": f"Error: {err}"}
                                     )
                         st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with st.container(border=True):
         st.subheader("📝 Workspace Notes", anchor=False)

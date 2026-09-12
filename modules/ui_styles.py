@@ -115,6 +115,7 @@ div[data-testid="stColumn"] div[data-testid="stButton"] button:hover {
 .app-footer {
     position: relative !important;
     display: block !important;
+    background: rgba(238, 236, 231, 0.95);
     width: 100%;
     margin-top: 2.5rem;
     padding-top: 1.2rem;

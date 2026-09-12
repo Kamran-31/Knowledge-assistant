@@ -47,7 +47,7 @@ html, body, [class*="css"] {
 
 /* Page padding to prevent the sticky footer from hiding content */
 .block-container {
-    padding-top: 1.5rem !important;
+    padding-top: 4.5rem !important;
     padding-bottom: 4.5rem !important;
     max-width: 100% !important;
 }

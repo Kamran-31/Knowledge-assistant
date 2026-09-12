@@ -1,5 +1,6 @@
 """
 UI Styles for Knowledge Assistant
+Contains custom CSS for cards, header, untruncated studio buttons, and a normal bottom footer.
 """
 
 CUSTOM_CSS = """
@@ -14,7 +15,7 @@ html, body, [class*="css"] {
     background-color: #F7F6F3;
 }
 
-/* Hide native Streamlit chrome */
+/* Hide default Streamlit chrome */
 header[data-testid="stHeader"] {
     display: none !important;
 }
@@ -23,14 +24,14 @@ header[data-testid="stHeader"] {
     visibility: hidden;
 }
 
-/* Container page padding */
+/* Page container */
 .block-container {
-    padding-top: 1.8rem !important;
-    padding-bottom: 4.5rem !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
     max-width: 100% !important;
 }
 
-/* Professional card containers */
+/* Rounded border cards */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: #FFFFFF;
     border-radius: 16px !important;
@@ -38,7 +39,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
 }
 
-/* Top bar standard buttons */
+/* Top bar buttons */
 div.stButton > button {
     border-radius: 999px !important;
     border: 1px solid #E4E1D8 !important;
@@ -55,50 +56,39 @@ div.stButton > button:hover {
     background: #F5F8FF !important;
 }
 
-/* ---------- STUDIO BUTTON FIXES ---------- */
-/* Container button box */
-.studio-card div[data-testid="stButton"] button {
-    min-height: 72px !important;
+/* ---------- STUDIO BUTTONS: PREVENT TEXT TRUNCATION ---------- */
+/* Force studio column buttons to accommodate 2 lines and larger icons */
+div[data-testid="stColumn"] div[data-testid="stButton"] button {
+    min-height: 60px !important;
     height: auto !important;
-    padding: 8px 4px !important;
+    padding: 6px 4px !important;
     border-radius: 12px !important;
     border: 1px solid #E5E7EB !important;
     background-color: #FAFAFA !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all 0.15s ease-in-out !important;
 }
 
-.studio-card div[data-testid="stButton"] button:hover {
+/* Eliminate ellipsis and force wrap across all descendant nodes */
+div[data-testid="stColumn"] div[data-testid="stButton"] button,
+div[data-testid="stColumn"] div[data-testid="stButton"] button *,
+div[data-testid="stColumn"] div[data-testid="stButton"] button p,
+div[data-testid="stColumn"] div[data-testid="stButton"] button span {
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+    word-break: break-word !important;
+    text-align: center !important;
+    font-size: 0.82rem !important;
+    line-height: 1.25 !important;
+}
+
+/* Hover state */
+div[data-testid="stColumn"] div[data-testid="stButton"] button:hover {
     border-color: #2563EB !important;
     background-color: #EFF6FF !important;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 6px rgba(37,99,235,0.08) !important;
+    box-shadow: 0 2px 5px rgba(37,99,235,0.08) !important;
 }
 
-/* Remove Streamlit's default truncation on all child text nodes */
-.studio-card div[data-testid="stButton"] button * {
-    white-space: pre-line !important;
-    text-overflow: unset !important;
-    overflow: visible !important;
-    word-break: normal !important;
-    text-align: center !important;
-    line-height: 1.25 !important;
-    font-size: 0.82rem !important;
-    font-weight: 500 !important;
-    color: #1F2937 !important;
-    margin: 0 !important;
-}
-
-/* First line (Emoji) enlargement */
-.studio-card div[data-testid="stButton"] button *:first-line {
-    font-size: 1.25rem !important;
-    line-height: 1.4 !important;
-}
-
-/* ---------- Other Components ---------- */
+/* Chat bubble styling */
 [data-testid="stChatMessage"] {
     background: #FFFFFF;
     border-radius: 14px;
@@ -121,20 +111,18 @@ div.stButton > button:hover {
     background: #F3F2EC;
 }
 
+/* ---------- NATURAL FOOTER (APPEARS ONLY AT BOTTOM OF PAGE) ---------- */
 .app-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
+    position: relative !important;
+    display: block !important;
     width: 100%;
-    background: rgba(247, 246, 243, 0.95);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    margin-top: 2.5rem;
+    padding-top: 1.2rem;
+    padding-bottom: 0.8rem;
     border-top: 1px solid #E5E7EB;
     text-align: center;
-    padding: 8px 16px;
     font-size: 0.76rem;
     color: #6B7280;
-    z-index: 99999;
     letter-spacing: 0.01em;
 }
 </style>
